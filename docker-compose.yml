@@ -1,0 +1,33 @@
+version: '3.8'
+
+# services:
+#   mongodb:
+#     image: mongo:latest
+#     container_name: mongodb
+#     environment:
+#       - MONGO_INITDB_ROOT_USERNAME=root
+#       - MONGO_INITDB_ROOT_PASSWORD=1234
+#     ports:
+#       - 27017:27017
+#     volumes:
+#       - ./mongodb:/data/db
+
+services:
+  mongoRep1:
+    container_name: mongoRep1
+    image: mongo:6.0.4
+    volumes:
+      - ./mongors/data1:/data/db
+      - ./rs-init.sh:/scripts/rs-init.sh
+    ports:
+      - 27021:27017
+    entrypoint: ['/usr/bin/mongod', '--bind_ip_all', '--replSet', 'dbrs']
+
+  mongoRep2:
+    container_name: mongoRep2
+    image: mongo:6.0.4
+    volumes:
+      - ./mongors/data2:/data/db
+    ports:
+      - 27022:27017
+    entrypoint: ['/usr/bin/mongod', '--bind_ip_all', '--replSet', 'dbrs']
