@@ -70,7 +70,7 @@ export class BookingService {
     const bookings = this.bookingModel.aggregate([
       { $match: filter },
       {
-        $unset: ['_id', '__v', 'isDeleted'],
+        $unset: ['__v', 'isDeleted'],
       },
       {
         $lookup: {
@@ -129,10 +129,30 @@ export class BookingService {
     )
       throw new UnauthorizedException('booking is not belong to user');
 
-    delete updateBookingDto.bookingId;
+    const updatedBooking = {};
+
+    // Validate dentist
+    if (updateBookingDto.dentistEmail) {
+      const dentist = await this.usersService.findOneEmail(
+        updateBookingDto.dentistEmail,
+      );
+      if (!dentist || dentist.roles.includes(Role.Dentist) === false)
+        throw new BadRequestException('invalid dentist');
+
+      Object.assign(updatedBooking, {
+        dentistId: dentist._id,
+      });
+    }
+
+    if (updateBookingDto.bookingDate) {
+      Object.assign(updatedBooking, {
+        bookingDate: updateBookingDto.bookingDate,
+      });
+    }
+
     await this.bookingModel.findByIdAndUpdate(
       { _id: bookingId },
-      updateBookingDto,
+      updatedBooking,
     );
 
     return true;
