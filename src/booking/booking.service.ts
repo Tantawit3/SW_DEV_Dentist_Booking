@@ -131,19 +131,19 @@ export class BookingService {
 
     const updatedBooking = {};
 
-    // Validate dentist
+    // Validate and assign dentist
     if (updateBookingDto.dentistEmail) {
       const dentist = await this.usersService.findOneEmail(
         updateBookingDto.dentistEmail,
       );
       if (!dentist || dentist.roles.includes(Role.Dentist) === false)
         throw new BadRequestException('invalid dentist');
-
       Object.assign(updatedBooking, {
         dentistId: dentist._id,
       });
     }
 
+    // Assign bookingDate
     if (updateBookingDto.bookingDate) {
       Object.assign(updatedBooking, {
         bookingDate: updateBookingDto.bookingDate,
