@@ -28,4 +28,4 @@ steps:
       - 'asia-southeast1'
 images:
   - 'gcr.io/$PROJECT_ID/dentist-backend:$COMMIT_SHA'
-timeout: 720s
+timeout: 900s

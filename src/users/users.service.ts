@@ -1,7 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
 import * as mongoose from 'mongoose';
-import { Role } from 'src/roles/enums/role.enum';
 
 import { Injectable } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
@@ -60,6 +59,29 @@ export class UsersService {
   }
 
   async getDentist(): Promise<User[]> {
-    return await this.userModel.find({ roles: Role.Dentist });
+    const dentists = await this.userModel.aggregate([
+      {
+        $match: {
+          roles: ['dentist'],
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          firstName: 1,
+          lastName: 1,
+          email: 1,
+          expertise: 1,
+          yearsOfExpirience: {
+            $dateDiff: {
+              startDate: '$startDentisting',
+              endDate: new Date('Fri, 05 May 2023 17:00:00 GMT'),
+              unit: 'year',
+            },
+          },
+        },
+      },
+    ]);
+    return dentists;
   }
 }
