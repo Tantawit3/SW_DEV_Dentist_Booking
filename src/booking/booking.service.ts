@@ -1,5 +1,6 @@
 import { Model } from 'mongoose';
 import * as mongoose from 'mongoose';
+import { bookingSessionHour } from 'src/constants/booking';
 import { Role } from 'src/roles/enums/role.enum';
 import { UsersService } from 'src/users/users.service';
 
@@ -45,6 +46,14 @@ export class BookingService {
     );
     if (!dentist || dentist.roles.includes(Role.Dentist) === false)
       throw new BadRequestException('invalid dentist');
+
+    // Check if dentist is avaiable in given date
+    const isDentistAvailable = await this.checkDentistAvailable(
+      dentist._id,
+      createBookingDto.bookingDate,
+    );
+    if (isDentistAvailable !== true)
+      throw new BadRequestException('dentist not avaiable on given time');
 
     // Attach userId and dentistId into booking
     Object.assign(createBookingDto, {
@@ -143,6 +152,20 @@ export class BookingService {
       });
     }
 
+    // Check if dentist is avaiable in given date
+    const dentist = updateBookingDto.dentistEmail
+      ? await this.usersService.findOneEmail(updateBookingDto.dentistEmail)
+      : await this.usersService.findOneId(booking.dentistId);
+    const isDentistAvailable = await this.checkDentistAvailable(
+      dentist._id,
+      updateBookingDto.bookingDate
+        ? updateBookingDto.bookingDate
+        : booking.bookingDate,
+      booking._id,
+    );
+    if (isDentistAvailable !== true)
+      throw new BadRequestException('dentist not avaiable on given time');
+
     // Assign bookingDate
     if (updateBookingDto.bookingDate) {
       Object.assign(updatedBooking, {
@@ -182,5 +205,26 @@ export class BookingService {
     );
 
     return true;
+  }
+
+  async checkDentistAvailable(
+    dentistId: mongoose.Types.ObjectId,
+    date: Date,
+    bookingId?: mongoose.Types.ObjectId,
+  ) {
+    date = new Date(date);
+    const startSession = new Date(date).setHours(
+      date.getHours() - bookingSessionHour,
+    );
+    const endSession = new Date(date).setHours(
+      date.getHours() + bookingSessionHour,
+    );
+    const booking = await this.bookingModel.findOne({
+      dentistId: dentistId,
+      bookingDate: { $gte: startSession, $lte: endSession },
+      _id: { $ne: bookingId },
+      isDeleted: false,
+    });
+    return booking ? false : true;
   }
 }
