@@ -47,6 +47,9 @@ export class BookingService {
     if (!dentist || dentist.roles.includes(Role.Dentist) === false)
       throw new BadRequestException('invalid dentist');
 
+    // Validate date
+    this.validateDate(createBookingDto.bookingDate);
+
     // Check if dentist is avaiable in given date
     const isDentistAvailable = await this.checkDentistAvailable(
       dentist._id,
@@ -152,6 +155,13 @@ export class BookingService {
       });
     }
 
+    // Validate date
+    this.validateDate(
+      updateBookingDto.bookingDate
+        ? updateBookingDto.bookingDate
+        : booking.bookingDate,
+    );
+
     // Check if dentist is avaiable in given date
     const dentist = updateBookingDto.dentistEmail
       ? await this.usersService.findOneEmail(updateBookingDto.dentistEmail)
@@ -226,5 +236,12 @@ export class BookingService {
       isDeleted: false,
     });
     return booking ? false : true;
+  }
+
+  validateDate(date: Date) {
+    date = new Date(date);
+    const now = new Date(Date.now());
+    if (date < now) throw new BadRequestException('date invalid');
+    return date;
   }
 }
