@@ -1,5 +1,7 @@
+import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
 import { BookingService } from 'src/booking/booking.service';
+import { saltOrRounds } from 'src/constants/hash';
 import { Role } from 'src/roles/enums/role.enum';
 import { User, UserDocument } from 'src/users/schema/users.schema';
 
@@ -16,6 +18,11 @@ export class AdminService {
   ) {}
 
   async createDentist(createDentistDto: CreateDentistDto) {
+    const password = createDentistDto.password;
+    createDentistDto.password = await bcrypt.hash(password, saltOrRounds);
+
+    //make email insensitivecase
+    createDentistDto.email = createDentistDto.email.toLowerCase();
     Object.assign(createDentistDto, {
       roles: [Role.Dentist],
     });
