@@ -3,7 +3,11 @@ import * as mongoose from 'mongoose';
 import { Role } from 'src/roles/enums/role.enum';
 import { UsersService } from 'src/users/users.service';
 
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -63,7 +67,40 @@ export class BookingService {
           : { dentistId: userId },
       );
     }
-    const bookings = this.bookingModel.find(filter);
+    const bookings = this.bookingModel.aggregate([
+      { $match: filter },
+      {
+        $unset: ['_id', '__v', 'isDeleted'],
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'dentistId',
+          foreignField: '_id',
+          as: 'dentist',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user',
+        },
+      },
+      {
+        $project: {
+          bookingDate: 1,
+          createDate: 1,
+          dentistEmail: {
+            $first: '$dentist.email',
+          },
+          userEmail: {
+            $first: '$user.email',
+          },
+        },
+      },
+    ]);
     return bookings;
   }
 
